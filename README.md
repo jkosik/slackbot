@@ -1,7 +1,3 @@
-**Owned by Juraj**
-  
-Location for storing chatops bots.
-
 # SecBot
 
 ## Architecture
@@ -47,7 +43,7 @@ Plugins can be enriched by OTP verification.
 To create QR code for initializing Google authenticator
 
 ```
-qrencode -o- -d 300 -s 10 "otpauth://totp/secbot:juraj.kosik@telekom.com?secret=xxxxx" -o secbotqr.png
+qrencode -o- -d 300 -s 10 "otpauth://totp/secbot:juraj.kosik@abc.de?secret=xxxxx" -o secbotqr.png
 display secbotqr.png
 ```
   
@@ -70,10 +66,8 @@ if totp.verify(otptoken) == True:
 * @secbot help
 * @secbot shodan "search --fields ip_str,port,org,hostnames net:83.131.9.0/24"
 * @secbot nova list 123456
-* @secbot heat kafkatest 152393
-* @secbot heat "stack-delete -y kafkatest" 061088
-* @secbot rce 100.127.172.61 date 444475
-* @secbot rce graylog.sec.in.pan-net.eu date 204955
+* @secbot rce 10.12.13.14 date 444475
+
 
 
 
