@@ -1,0 +1,30 @@
+---
+
+#Installs new feature
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: Force git pull - in case something was changed on secbot machine
+      command: "{{ item }}"
+      args:
+        chdir: /data/bots
+      with_items: 
+        - git fetch --all
+        - git reset --hard origin/master
+
+    - name: Make everything in plugins dir executable
+      file:
+        path: /data/bots/plugins
+        mode: a+x
+        recurse: yes
+
+    - name: Stop secbot.py.
+      command: pkill python3
+      ignore_errors: True
+
+    - name: Start secbot.py in background
+      shell: "(cd /data/bots; python3 secbot.py >/dev/null 2>/var/log/secbot &)"
+      async: 10
+
+

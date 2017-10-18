@@ -1,0 +1,122 @@
+---
+
+#Deploys secbot
+
+- hosts: all
+  become: yes
+  gather_facts: false
+  roles:
+    - { role: ansible-set-proxy, http_proxy_address: "http://proxy:3128", https_proxy_address: "http://proxy:3128", tags: ["set-proxy"] }
+
+
+# this block is mainly because Ubuntu xenial doesn't have  
+- hosts: all
+  become: yes
+  gather_facts: no
+  roles:
+    - { role: ansible-py2-bootstrap, tags: [ "py2-bootstrap"] }
+
+- hosts: all
+  become: yes
+  roles:
+#    - { role: ansible-locale, when: ansible_os_family == 'Debian', tags: ['locale'] }
+    - { role: ansible-fqdn, fqdn: "{{ inv_hostname }}", tags: ['fqdn'] }
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: Copy .gitconfig for ubuntu user
+      copy:
+        src: .gitconfig
+        dest: /home/ubuntu/.gitconfig
+        owner: ubuntu
+        group: ubuntu
+        mode: 0644
+
+    - name: Copy .gitconfig for root
+      copy:
+        src: .gitconfig
+        dest: /root/.gitconfig
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Install tools and dependencies
+      apt:
+        name: "{{ item }}"
+        allow_unauthenticated: yes
+        state: present
+      with_items:
+        - git
+        - mc
+        - python
+        - python3
+        - python
+        - python-pip
+        - python3-pip
+#        - python3-libssl
+        - libssl-dev
+        - qrencode
+
+    - name: Remove /data/bots
+      file:
+        state: absent
+        path: "/data/bots"
+
+    - name: Create /data/bots
+      file:
+        state: directory 
+        path: "/data/bots"
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Cloning repo
+      git:
+        repo: "git@github.com:jkosik/slackbot.git"
+        dest: "/data/bots"
+        update: yes
+        force: yes
+      become: ubuntu
+
+    - name: Make everything in plugins dir executable
+      file:
+        path: /data/bots/plugins
+        mode: a+x
+        recurse: yes
+
+    - name: Add secbot public key to the target
+      lineinfile:
+        path: /home/ubuntu/.ssh/authorized_keys
+        line: "{{ item }}"
+      with_items:
+        - "{{ secbot_pubkey }}"
+
+    - name: Bizuteria
+      command: "{{ item }}"
+      with_items:
+        - pip3 install slackclient
+        - pip3 install authenticator
+        - pip3 install pyotp
+        - pip3 install shodan
+        - pip install python-openstackclient
+        - pip install python-neutronclient
+        - pip install python-novaclient
+        - pip install python-heatclient
+
+    - name: Stop secbot.py. Drops anyhow during /data/bots removal
+      command: pkill python3
+      ignore_errors: True
+
+    - name: Start secbot.py in background
+      shell: "(cd /data/bots; python3 secbot.py >/dev/null 2>&1 &)"
+      async: 10
+
+    - name: Add crontab job to restart secbot regularly
+      cron: minute="0" name="Restart secbot"
+        cron_file="restart-secbot"
+        user="root"
+        job="pkill python3; cd /data/bots; python3 secbot.py >/dev/null 2>/var/log/secbot &"
+      tags: cronjob
+
+
+

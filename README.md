@@ -1,2 +1,83 @@
-# slackbot
-Python-based bot triggered by Slack
+**Owned by Juraj**
+  
+Location for storing chatops bots.
+
+# SecBot
+
+## Architecture
+SecBot utilizes Slack Real Time Messaging API used by Slack Bots. Slack Bot is implemented using ```slackclient``` python library => ```secbot.py```  
+  
+```secbot.py``` runs and watches all calls to @secbot Slack account in any Slack channel, e.g. *@secbot help*  
+
+Commands after *@secbot* are passed to ```secbot.py``` and logic is applied afterwards in SecBot VM.  
+```secbot.py``` logic is applied using *plugins* which are stored in *plugins/* directory.
+  
+SecBot on receiving the command scans *plugins* directory and executes desired feature.
+
+
+## Plugins
+Plugins are pieces of code which execute desired SecBot's feature. Plugins can be written in any language. Only requirement is prescribed structure of plugins subfolders:
+* plugins/
+ * feature1/
+     * feature_executable
+     * internals/
+         * arbitrary file/dir structure
+ * feature2/
+     * feature_executable
+ * feature3/
+     * feature_executable
+     * internals/
+         * arbitrary file/dir structure
+
+## Initial Deployment
+SecBot lives in a standalone VM. Deployment:  
+```
+ansible-playbook -i inventory secbot-deploy.yml
+```
+
+## Lifecycle
+New features are developed in a non-master branches. New subdirectory is created in *plugins* dir, e.g. featureN and code is put inside.  
+```git push``` runs a pipeline stage which checks proper structure of feature subdirectory. If everything OK, merge request can be created.
+  
+Merging into *master* branch triggers another pipeline stage which does ```git pull``` on SecBot VM to adopt newly created feature directory.
+
+## Security
+Plugins can be enriched by OTP verification.  
+  
+To create QR code for initializing Google authenticator
+
+```
+qrencode -o- -d 300 -s 10 "otpauth://totp/secbot:juraj.kosik@telekom.com?secret=xxxxx" -o secbotqr.png
+display secbotqr.png
+```
+  
+To enable OTP verification within plugin:
+
+```
+import sys
+sys.path.insert(0, '/home/juraj/vault')
+from bots import *
+import pyotp
+...
+totp = pyotp.TOTP(OTP_SECRET) #OTP stored in vault
+...
+if totp.verify(otptoken) == True:
+...
+```
+*In case above OTP_SECRET is defined in /home/juraj/vault/bots.py*
+
+## Examples
+* @secbot help
+* @secbot shodan "search --fields ip_str,port,org,hostnames net:83.131.9.0/24"
+* @secbot nova list 123456
+* @secbot heat kafkatest 152393
+* @secbot heat "stack-delete -y kafkatest" 061088
+* @secbot rce 100.127.172.61 date 444475
+* @secbot rce graylog.sec.in.pan-net.eu date 204955
+
+
+
+
+
+
+
