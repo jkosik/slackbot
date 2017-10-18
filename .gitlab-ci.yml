@@ -1,0 +1,39 @@
+image: #CHANGEME - DOCKER IMAGE FOR GITLAB RUNNERS
+
+variables:
+  GIT_SSL_NO_VERIFY: "true" 
+
+before_script:
+  - ls -la
+  - echo $ENV
+  - apt-get install -y python3
+  - mkdir -p /opt/staging
+  - cp staging/* /opt/staging
+  - chmod +x /opt/staging/*
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - ssh-add <(echo "$DEPLOYER_KEY")
+  - mkdir -p ~/.ssh
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+
+stages:
+  - staging
+  - update_secbot
+
+staging:
+  stage: staging
+  script:
+    - printf Running staging tests
+    - cd staging/
+    - pwd
+    - python3 staging.py
+  except:
+    - master
+
+update_secbot:
+  stage: update_secbot
+  script:
+    - ssh ubuntu@x.x.x.x "/data/bots/deploy/secbot-update.sh" #CHANGE IP TO YOUR DEPLOYER MACHINE
+  only:
+    - master
+
