@@ -68,7 +68,7 @@ if totp.verify(otptoken) == True:
 * @secbot nova list 123456
 * @secbot rce 10.12.13.14 date 444475
 
-# Slack TTS
+# Slack TTS (Text to Speech)
 `slack_tts.py` utilizes "Slack Legacy token" issued for bot (part of Bots integration). Script listens to posts present in all channels where bot is invited to. Script parses outputs and plays via speakers.  
 
 When running on MacOS, no need to import gtts library. MacOS has embedded tts via `say` binary and can be used directly
