@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import sys
-sys.path.insert(0, '/home/juraj/vault')
+sys.path.insert(0, '/home/ubuntu/vault')
 from bots import *
 import argparse
 import subprocess
@@ -22,7 +22,7 @@ response = ""
 if totp.verify(args.otp) == True:
     response = "Token is correct.\n"
 
-    if args.target.startswith("<"): 
+    if args.target.startswith("<"): #slack sends URLs (target) as <http://graylog.sec.in.pan-net.eu|graylog.sec.in.pan-net.eu>. Need to cut fqdn.
         resolved = args.target.split("|")[1].split(">")[0]
     cmd = "ssh -i /home/juraj/vault/sc-vm-juraj -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@{0} {1}".format(resolved, args.rcecmd)
     p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)

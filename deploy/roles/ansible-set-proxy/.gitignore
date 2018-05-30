@@ -1,0 +1,9 @@
+﻿#  Backup/Swap files
+*~
+*.bak*
+*.bkp*
+.*hist
+*hist
+*.svn
+*.sw*
+*.tmp*

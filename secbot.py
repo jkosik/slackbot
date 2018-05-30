@@ -4,23 +4,14 @@ import os
 import time
 from slackclient import SlackClient
 import json
-import requests
-import random
-import getpass
 import shlex, subprocess
-import re
 import sys
-sys.path.insert(0, '/home/juraj/vault')
+sys.path.insert(0, '/home/ubuntu/vault')
 from bots import *
-import pyotp
 
 
 BOT_NAME = 'secbot'
-BOT_ID = #CHANGEME
-
-SLACKTOKEN = BOT_SLACKTOKEN
-totp = pyotp.TOTP(OTP_SECRET) #OTP stored in vault
-
+BOT_ID = "U5Q12FHSS"
 
 slack_client = SlackClient(SLACKTOKEN)
 
@@ -49,7 +40,7 @@ def handle_command(command, channel):
             print(file_to_run)
             cmd = "./plugins/{0}/{1} {2}".format(c,file_to_run[0], args_joined)
             #cmd = "python3 ./plugins/{0}/{1} {2}".format(c,file_to_run[0], args_joined)
-            #print(cmd)
+            print(cmd)
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out = p.communicate()[0]
             p.wait()

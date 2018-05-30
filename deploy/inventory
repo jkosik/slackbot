@@ -1,2 +1,2 @@
 [secbot]
-x.x.x.x inv_hostname="secbot"
+secbot ansible_host=10.10.10.10

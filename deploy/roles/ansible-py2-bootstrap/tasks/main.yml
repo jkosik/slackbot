@@ -1,0 +1,18 @@
+---
+- name: test for python ** (okay to fail, just want to register the result) **
+  raw: "python -V"
+  register: python_version
+  ignore_errors: yes
+ 
+- name: run apt-get update
+  raw: sudo apt-get update
+  when: python_version.stdout.find('not found') != -1
+
+- name: install python2.7 for ansible support
+  raw: sudo apt-get -y install python2.7
+  when: python_version.stdout.find('not found') != -1
+
+- name: create a symlink for python2
+  raw: link=`ls /usr/bin/python`;if [ -z "$link" ]; then sudo ln -s /usr/bin/python2.7 /usr/bin/python; else echo "/usr/bin/python is set"; fi
+  ignore_errors: yes
+  when: python_version.stdout.find('not found') != -1

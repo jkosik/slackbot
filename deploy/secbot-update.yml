@@ -19,12 +19,12 @@
         mode: a+x
         recurse: yes
 
-    - name: Stop secbot.py.
+    - name: Stop .py
       command: pkill python3
       ignore_errors: True
 
     - name: Start secbot.py in background
-      shell: "(cd /data/bots; python3 secbot.py >/dev/null 2>/var/log/secbot &)"
+      shell: "(cd /data/bots; python3 secbot.py >/var/log/secbot.out 2>/var/log/secbot.err &)"
       async: 10
 
 

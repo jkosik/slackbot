@@ -1,5 +1,13 @@
 ---
 
-secbot_pubkey: #CHANGEME
+http_proxy: ""
+https_proxy: ""
+
+git_user: "xxx"
+git_email: "xxx"
+
+bots_repo: "YOUR BOT REPO URL" #Needed for Gitlab pipeline tasks
+
+secbot_pubkey: "ssh-rsa xxx"
 
 

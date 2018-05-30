@@ -6,7 +6,7 @@
   become: yes
   gather_facts: false
   roles:
-    - { role: ansible-set-proxy, http_proxy_address: "http://proxy:3128", https_proxy_address: "http://proxy:3128", tags: ["set-proxy"] }
+    - { role: ansible-set-proxy, http_proxy_address: "{{ http_proxy }}", https_proxy_address: "{{ https_proxy }}", tags: ["set-proxy"] }
 
 
 # this block is mainly because Ubuntu xenial doesn't have  
@@ -20,43 +20,52 @@
   become: yes
   roles:
 #    - { role: ansible-locale, when: ansible_os_family == 'Debian', tags: ['locale'] }
-    - { role: ansible-fqdn, fqdn: "{{ inv_hostname }}", tags: ['fqdn'] }
+    - { role: ansible-fqdn, tags: ['fqdn'] }
 
 - hosts: all
   become: yes
   tasks:
-    - name: Copy .gitconfig for ubuntu user
-      copy:
+    - name: Copy .gitconfig for ubuntu user or other users
+      template:
         src: .gitconfig
-        dest: /home/ubuntu/.gitconfig
-        owner: ubuntu
-        group: ubuntu
+        dest: "/home/{{ item }}/.gitconfig"
+        owner: "{{ item }}"
+        group: "{{ item }}"
         mode: 0644
+      with_items:
+        - ubuntu
 
-    - name: Copy .gitconfig for root
-      copy:
+    - name: Copy .gitconfig for ubuntu user or other users
+      template:
         src: .gitconfig
         dest: /root/.gitconfig
         owner: root
         group: root
         mode: 0644
 
-    - name: Install tools and dependencies
+    - name: Apt update
+      apt:
+        update_cache: yes
+
+    - name: Install basic packages
       apt:
         name: "{{ item }}"
         allow_unauthenticated: yes
         state: present
+      environment:
+        http_proxy: "{{ http_proxy | default ('') }}"
+        https_proxy: "{{ https_proxy | default ('') }}"
       with_items:
         - git
         - mc
         - python
         - python3
-        - python
         - python-pip
         - python3-pip
-#        - python3-libssl
         - libssl-dev
         - qrencode
+        - jq
+      tags: basicpkg
 
     - name: Remove /data/bots
       file:
@@ -70,53 +79,111 @@
         owner: ubuntu
         group: ubuntu
 
-    - name: Cloning repo
+    - name: Cloning bots repo
       git:
-        repo: "git@github.com:jkosik/slackbot.git"
+        repo: "{{ bots_repo }}"
         dest: "/data/bots"
         update: yes
         force: yes
       become: ubuntu
+      environment:
+        http_proxy: "{{ http_proxy | default ('') }}"
+        https_proxy: "{{ https_proxy | default ('') }}"
 
-    - name: Make everything in plugins dir executable
+    - name: Make everything in /plugins dir executable
       file:
         path: /data/bots/plugins
         mode: a+x
         recurse: yes
 
-    - name: Add secbot public key to the target
+    - name: Add secbot public key to the target - user
       lineinfile:
         path: /home/ubuntu/.ssh/authorized_keys
         line: "{{ item }}"
       with_items:
         - "{{ secbot_pubkey }}"
 
-    - name: Bizuteria
+    - name: Add secbot public key to the target - root
+      lineinfile:
+        path: /root/.ssh/authorized_keys
+        line: "{{ item }}"
+      with_items:
+        - "{{ secbot_pubkey }}"
+
+
+    - name: Install packages for bot functions
       command: "{{ item }}"
       with_items:
         - pip3 install slackclient
         - pip3 install authenticator
         - pip3 install pyotp
         - pip3 install shodan
-        - pip install python-openstackclient
-        - pip install python-neutronclient
-        - pip install python-novaclient
-        - pip install python-heatclient
+ 
+    - name: Install packages for bot functions
+      apt:
+        name: "{{ item }}"
+      with_items:
+        - python3-openstackclient
+        - python3-neutronclient
+        - python3-novaclient
+        - python3-heatclient
 
-    - name: Stop secbot.py. Drops anyhow during /data/bots removal
+    - name: Create vault dir
+      file:
+        state: directory 
+        path: "/home/ubuntu/vault"
+        owner: ubuntu
+        group: ubuntu
+        mode: 0600
+
+    - name: Copy secrets to vault
+      copy:
+        src: bots.py
+        dest: "/home/ubuntu/vault/bots.py"
+        owner: ubuntu
+        group: ubuntu
+        mode: 0600
+
+    - name: Stop residual .py if running
       command: pkill python3
       ignore_errors: True
 
-    - name: Start secbot.py in background
-      shell: "(cd /data/bots; python3 secbot.py >/dev/null 2>&1 &)"
-      async: 10
+    - name: Touch log file
+      file:
+        path: "/var/log/{{ item }}"
+        state: touch
+        owner: syslog
+        group: adm
+        mode: 666
+      with_items:
+        - secbot.out
+        - secbot.err
 
-    - name: Add crontab job to restart secbot regularly
+    - name: Add crontab job to restart secbot regularly in /etc/cron.d/restart-secbot
       cron: minute="0" name="Restart secbot"
         cron_file="restart-secbot"
         user="root"
-        job="pkill python3; cd /data/bots; python3 secbot.py >/dev/null 2>/var/log/secbot &"
+        job="pkill python3; cd /data/bots; python3 secbot.py >/var/log/secbot.out 2>/var/log/secbot.err &"
       tags: cronjob
+
+    - name: Create /data/dir
+      file:
+        state: directory 
+        path: "/data"
+        owner: ubuntu
+        group: ubuntu
+        mode: 0644
+      tags: clone
+
+    - name: Git clone bots repo
+      git:
+        repo: "{{ bots_repo }}"
+        dest: /data/bots
+      clone: no
+      ignore_errors: true #in case repo is cloned already. secbot-update.yml will pull updates if needed
+      tags: clone
+
+
 
 
 

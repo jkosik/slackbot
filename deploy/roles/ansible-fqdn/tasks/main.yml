@@ -1,0 +1,24 @@
+---
+- name: Set Hostname with hostname command
+  hostname: name="{{ fqdn }}"
+# if using "hostname" instead of "fqdn", sssd will break.
+
+- name: Re-gather facts
+  action: setup
+  when: ansible_hostname != fqdn
+
+- name: Build hosts file (backups will be made)
+  lineinfile: dest=/etc/hosts line='{{ ansible_default_ipv4.address }} {{ fqdn }} {{ inventory_hostname_short }}' state=present backup=yes
+  when: ansible_default_ipv4.address is defined
+
+- name: set hostname using hostnamectl
+  raw: hostnamectl set-hostname {{ fqdn }}
+
+- name: restart hostname 
+  raw: systemctl restart systemd-logind.service
+
+  ## no longer supported on ansible 2.2?
+# - name: restart hostname
+#   service: name=hostname state=restarted
+#   poll: 0
+#  async: 45

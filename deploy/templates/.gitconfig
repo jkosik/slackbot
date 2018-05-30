@@ -1,0 +1,8 @@
+[user]
+	name = "{{ git_user }}"
+	email = "{{ git_email }}"
+[http]
+	sslverify = false
+[credential]
+	helper = cache
+

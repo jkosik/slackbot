@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import sys
-sys.path.insert(0, '/home/juraj/vault')
+sys.path.insert(0, '/home/ubuntu/vault')
 from bots import *
 import argparse
 import subprocess
