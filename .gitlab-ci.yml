@@ -1,0 +1,55 @@
+image: docker-registry:4567/docker-images/docker-bot:latest
+
+variables:
+  GIT_SSL_NO_VERIFY: "true" # FIXME
+
+before_script:
+  - apk add --no-cache python3
+  - ls -la
+  - mkdir -p /opt/staging
+  - cp staging/* /opt/staging
+  - chmod +x /opt/staging/*
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+  - eval $(ssh-agent -s)
+  - bash -c "ssh-add <(echo '$SECBOT_KEY')"
+  - mkdir -p ~/.ssh
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+#  - echo $SECBOT_VAULT > /tmp/.vault_pass
+
+stages:
+  - deploy
+  - staging
+  - update
+
+deploy_secbot: 
+  stage: deploy
+  script:
+    - pwd
+    - cd deploy/
+    - ansible-playbook -i inventory secbot-deploy.yml
+#    - ansible-playbook -i inventory secbot-deploy.yml --vault-password-file /tmp/.vault_pass
+  only:
+    - /^deploy.*$/
+
+staging_tests:
+  stage: staging
+  script:
+    - printf Running staging tests
+    - cd staging/
+    - pwd
+    - python3 staging.py
+  only:
+    - master
+
+
+update_secbot:
+  stage: update
+  script:
+    - pwd
+    - cd deploy/
+    - ansible-playbook -i inventory secbot-update.yml 
+# assumes deploy stage was run before and vault file was update on secbot (needed for secbot.py and plugins)
+# 
+  only:
+    - master
+
