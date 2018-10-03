@@ -1,8 +1,5 @@
 ---
 
-http_proxy: ""
-https_proxy: ""
-
 git_user: "xxx"
 git_email: "xxx"
 

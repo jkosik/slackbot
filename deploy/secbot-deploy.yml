@@ -2,13 +2,6 @@
 
 #Deploys secbot
 
-- hosts: all
-  become: yes
-  gather_facts: false
-  roles:
-    - { role: ansible-set-proxy, http_proxy_address: "{{ http_proxy }}", https_proxy_address: "{{ https_proxy }}", tags: ["set-proxy"] }
-
-
 # this block is mainly because Ubuntu xenial doesn't have  
 - hosts: all
   become: yes
@@ -52,9 +45,6 @@
         name: "{{ item }}"
         allow_unauthenticated: yes
         state: present
-      environment:
-        http_proxy: "{{ http_proxy | default ('') }}"
-        https_proxy: "{{ https_proxy | default ('') }}"
       with_items:
         - git
         - mc
@@ -86,9 +76,6 @@
         update: yes
         force: yes
       become: ubuntu
-      environment:
-        http_proxy: "{{ http_proxy | default ('') }}"
-        https_proxy: "{{ https_proxy | default ('') }}"
 
     - name: Make everything in /plugins dir executable
       file:
@@ -156,17 +143,16 @@
         group: adm
         mode: 666
       with_items:
-        - secbot.out
-        - secbot.err
+        - secbot.log
 
-    - name: Add crontab job to restart secbot regularly in /etc/cron.d/restart-secbot
-      cron: minute="0" name="Restart secbot"
-        cron_file="restart-secbot"
+    - name: Add crontab job to restart secbot regularly in /etc/cron.d/secbot
+      cron: minute="0" name="Secbot"
+        cron_file="secbot"
         user="root"
         job="pkill python3; cd /data/bots; python3 secbot.py >/var/log/secbot.out 2>/var/log/secbot.err &"
       tags: cronjob
 
-    - name: Create /data/dir
+    - name: Create /data/ dir
       file:
         state: directory 
         path: "/data"

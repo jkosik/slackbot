@@ -1,2 +1,2 @@
 [secbot]
-secbot ansible_host=10.10.10.10
+secbot ansible_host=10.235.26.144
