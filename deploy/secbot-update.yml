@@ -8,14 +8,14 @@
     - name: Force git pull - in case something was changed on secbot machine
       command: "{{ item }}"
       args:
-        chdir: /data/bots
+        chdir: "{{ bots_dir }}"
       with_items: 
         - git fetch --all
         - git reset --hard origin/master
 
     - name: Make everything in plugins dir executable
       file:
-        path: /data/bots/plugins
+        path: "{{ bots_dir}}/plugins"
         mode: a+x
         recurse: yes
 
@@ -24,7 +24,7 @@
       ignore_errors: True
 
     - name: Start secbot.py in background
-      shell: "(cd /data/bots; python3 secbot.py >/var/log/secbot.out 2>/var/log/secbot.err &)"
+      shell: "(cd {{ bots_dir }}; python3 secbot.py &>>/var/log/secbot.log &)"
       async: 10
 
 

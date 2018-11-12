@@ -1,10 +1,15 @@
 ---
 
+#http_proxy: "http://proxy.hu.in.pan-net.eu:3128"
+#https_proxy: "http://proxy.hu.in.pan-net.eu:3128"
+
 git_user: "xxx"
-git_email: "xxx"
+git_email: "juraj@abc.eu"
 
-bots_repo: "YOUR BOT REPO URL" #Needed for Gitlab pipeline tasks
+bots_dir: "/data/secbot"
+bots_repo: "https://gitlab.abc.eu/secbot.git"
 
-secbot_pubkey: "ssh-rsa xxx"
+
+secbot_pubkey: "ssh-rsa abc secbot"
 
 

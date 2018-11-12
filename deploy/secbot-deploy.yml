@@ -2,6 +2,13 @@
 
 #Deploys secbot
 
+#- hosts: all
+#  become: yes
+#  gather_facts: false
+#  roles:
+#    - { role: ansible-set-proxy, http_proxy_address: "{{ http_proxy }}", https_proxy_address: "{{ https_proxy }}", tags: ["set-proxy"] }
+
+
 # this block is mainly because Ubuntu xenial doesn't have  
 - hosts: all
   become: yes
@@ -45,6 +52,9 @@
         name: "{{ item }}"
         allow_unauthenticated: yes
         state: present
+      environment:
+        http_proxy: "{{ http_proxy | default ('') }}"
+        https_proxy: "{{ https_proxy | default ('') }}"
       with_items:
         - git
         - mc
@@ -57,29 +67,31 @@
         - jq
       tags: basicpkg
 
-    - name: Remove /data/bots
+    - name: Remove repo dir
       file:
         state: absent
-        path: "/data/bots"
+        path: "{{ bots_dir }}"
 
-    - name: Create /data/bots
+    - name: Create repo dir
       file:
         state: directory 
-        path: "/data/bots"
+        path: "{{ bots_dir }}"
         owner: ubuntu
         group: ubuntu
 
     - name: Cloning bots repo
       git:
         repo: "{{ bots_repo }}"
-        dest: "/data/bots"
+        dest: "{{ bots_dir }}"
         update: yes
         force: yes
-      become: ubuntu
+      environment:
+        http_proxy: "{{ http_proxy | default ('') }}"
+        https_proxy: "{{ https_proxy | default ('') }}"
 
     - name: Make everything in /plugins dir executable
       file:
-        path: /data/bots/plugins
+        path: "{{ bots_dir }}/plugins"
         mode: a+x
         recurse: yes
 
@@ -123,13 +135,22 @@
         group: ubuntu
         mode: 0600
 
-    - name: Copy secrets to vault
+    - name: Copy secrets to vault (only if not present already)
       copy:
         src: bots.py
         dest: "/home/ubuntu/vault/bots.py"
         owner: ubuntu
         group: ubuntu
         mode: 0600
+        force: no
+
+    - name: Copy check script
+      template:
+        src: check_restart.sh
+        dest: "/opt/check_restart.sh"
+        owner: ubuntu
+        group: ubuntu
+        mode: 0777
 
     - name: Stop residual .py if running
       command: pkill python3
@@ -146,28 +167,14 @@
         - secbot.log
 
     - name: Add crontab job to restart secbot regularly in /etc/cron.d/secbot
-      cron: minute="0" name="Secbot"
+      cron: minute="*" name="secbot"
         cron_file="secbot"
         user="root"
-        job="pkill python3; cd /data/bots; python3 secbot.py >/var/log/secbot.out 2>/var/log/secbot.err &"
+        job="/opt/check_restart.sh"
       tags: cronjob
 
-    - name: Create /data/ dir
-      file:
-        state: directory 
-        path: "/data"
-        owner: ubuntu
-        group: ubuntu
-        mode: 0644
-      tags: clone
-
-    - name: Git clone bots repo
-      git:
-        repo: "{{ bots_repo }}"
-        dest: /data/bots
-      clone: no
-      ignore_errors: true #in case repo is cloned already. secbot-update.yml will pull updates if needed
-      tags: clone
+    - name: Comment
+      debug: msg="Update vault/bots.py with SLACKTOKEN and secrets needed for bot commands"
 
 
 
