@@ -1,15 +1,12 @@
 # SecBot
 
 ## Architecture
-SecBot utilizes Slack Real Time Messaging API used by Slack Bots. Slack Bot is implemented using ```slackclient``` python library => ```secbot.py```  
+SecBot utilizes Slack Real Time Messaging API used by Slack Bots. Slack Bot is implemented using `slackclient` python library => `secbot.py`  
   
-```secbot.py``` runs and watches all calls to @secbot Slack account in any Slack channel, e.g. *@secbot help*  
+`secbot.py` runs and watches all posts starting with `@secbot`, e.g. *@secbot help*  
 
-Commands after *@secbot* are passed to ```secbot.py``` and logic is applied afterwards in SecBot VM.  
-```secbot.py``` logic is applied using *plugins* which are stored in *plugins/* directory.
-  
-SecBot on receiving the command scans *plugins* directory and executes desired feature.
-
+Commands defined after `@secbot` are passed to `secbot.py` and logic is applied afterwards.  
+`secbot.py` logic is applied using `plugins` stored in `plugins/` directory. Each plugin represents a feature the SecBot possess.
 
 ## Plugins
 Plugins are pieces of code which execute desired SecBot's feature. Plugins can be written in any language. Only requirement is prescribed structure of plugins subfolders:
@@ -24,18 +21,14 @@ Plugins are pieces of code which execute desired SecBot's feature. Plugins can b
      * feature_executable
      * internals/
          * arbitrary file/dir structure
+  
+Plugins are developed in collaborative git-style. **Commit => Merge Request => Merge to Master branch => CICD pipelines tests the code a updates the machine runnig SecBot via Ansible (using secbot-update.yml)**
 
 ## Initial Deployment
 SecBot lives in a standalone VM. Deployment:  
 ```
 ansible-playbook -i inventory secbot-deploy.yml
 ```
-
-## Lifecycle
-New features are developed in a non-master branches. New subdirectory is created in *plugins* dir, e.g. featureN and code is put inside.  
-```git push``` runs a pipeline stage which checks proper structure of feature subdirectory. If everything OK, merge request can be created.
-  
-Merging into *master* branch triggers another pipeline stage which does ```git pull``` on SecBot VM to adopt newly created feature directory.
 
 ## Security
 Plugins can be enriched by OTP verification.  
