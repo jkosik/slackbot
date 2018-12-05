@@ -22,9 +22,9 @@ response = ""
 if totp.verify(args.otp) == True:
     response = "Token is correct.\n"
 
-    if args.target.startswith("<"): #slack sends URLs (target) as <http://graylog.sec.in.pan-net.eu|graylog.sec.in.pan-net.eu>. Need to cut fqdn.
+    if args.target.startswith("<"): #slack sends URLs (target) as <http://fqdn|fqdn>. Need to cut fqdn out if used instead of IP.
         resolved = args.target.split("|")[1].split(">")[0]
-    cmd = "ssh -i /home/juraj/vault/sc-vm-juraj -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@{0} {1}".format(resolved, args.rcecmd)
+    cmd = "ssh -i /home/juraj/vault/juraj -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@{0} {1}".format(resolved, args.rcecmd)
     p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out,err = p.communicate()
     out_list = out.decode('utf-8').split("\n")
