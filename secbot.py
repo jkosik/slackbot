@@ -8,16 +8,21 @@ import shlex, subprocess
 import sys
 sys.path.insert(0, '/home/ubuntu/vault')
 from bots import *
+import logging
 
+import builtins as __builtin__
+def print(*args, **kwargs):
+    __builtin__.print(*args, flush=True, **kwargs)
 
 BOT_NAME = 'secbot'
-BOT_ID = "U5Q12FHSS"
+BOT_ID = "UD5EX9DUY"
 
 slack_client = SlackClient(SLACKTOKEN)
 
 # constants
 AT_BOT = "<@" + BOT_ID + ">"
 
+logger = logging.getLogger('secbot')
 
 def handle_command(command, channel):
     """
@@ -47,14 +52,41 @@ def handle_command(command, channel):
             #print(out)
             out_list = out.decode('utf-8').split("\n")
             #print(out_list)
-            response = "*Running cmd: {}* \n".format(c)
-            for record in out_list:
-                response += record
-                response += "\n"
-            break
+            #response = "*Running cmd: {}* \n".format(c)
+
+            # if a plugin returns a list of strings in format ["CODE", "str1", "str2"]
+            # "CODE" will be stripped and str1 and str2 will be formatted as Slack code
+            # ```str1
+            #    str2```
+
+            if out_list[0] == "CODE":
+                out_list.pop(0)
+                response = "```"
+                for record in out_list:
+                    if ( len(record) + len(response) + 2*len('```')) > 4000:
+                        if len(record) > 4000:
+                            logger.debug('Long response')
+                            logger.debug('len(record) = {}'.format(len(record)))
+                            logger.debug(out_list)
+                            response = "*One line of output is longer then 4k chars. Change implementation of your command.*"
+                            break
+                        else:
+                            response += "```"
+                            logger.debug('Message cut. Length: {}, potential length: {}'.format( len(response), len(response+record) ))
+                            slack_client.api_call("chat.postMessage", channel=channel, text=response, as_user=True)
+                            response = "```"
+                    response += record
+                    response += "\n"
+                if response[0] != '*': # there is no error message
+                    response += "```"
+                break
+            else:
+                for record in out_list:
+                    response += record
+                    response += "\n"
+                break
         else:
-            response = "RTFM :)\n"
-            response += "or type \n ```@secbot help```"
+            response = "Sorry, command not found. Please try: \n ```@secbot help```"
 
     slack_client.api_call("chat.postMessage", channel=channel, text=response, as_user=True)
 
@@ -77,6 +109,7 @@ def parse_slack_output(slack_rtm_output):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='/var/log/secbot.log',level=logging.DEBUG)
     READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
     if slack_client.rtm_connect():
         print("StarterBot connected and running!")

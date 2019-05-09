@@ -1,0 +1,12 @@
+[Unit]
+Description=PAN-NET secbot
+
+[Service]
+User=root
+WorkingDirectory={{ bots_dir }}
+ExecStart=/usr/bin/python3 secbot.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,8 +1,18 @@
 ---
-
 #Installs new feature
+- name: Install Pan-Net root CA
+  hosts: all
+  become: yes
+  gather_facts: yes
+  roles:
+  - ansible-trust-ca
+  tags:
+    - root-ca-install
 
 - hosts: all
+  vars_files:
+  - group_vars/clouds.yml
+  - group_vars/all.yml
   become: yes
   tasks:
     - name: Force git pull - in case something was changed on secbot machine
@@ -19,12 +29,18 @@
         mode: a+x
         recurse: yes
 
-    - name: Stop .py
-      command: pkill python3
-      ignore_errors: True
+    - name: Install python-keystoneclient
+      command: "pip3 install python-keystoneclient"
 
-    - name: Start secbot.py in background
-      shell: "(cd {{ bots_dir }}; python3 secbot.py &>>/var/log/secbot.log &)"
-      async: 10
+    - name: Copy clouds_auth_data to vault
+      copy:
+        content: "{{ clouds_auth_data }}"
+        dest: "/home/ubuntu/vault/clouds.json"
+        owner: ubuntu
+        group: ubuntu
+        mode: 0600
 
-
+    - name: Enable and restart service
+      systemd:
+        name: secbot
+        state: restarted
