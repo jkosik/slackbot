@@ -1,8 +1,4 @@
 ---
-
-#http_proxy: "http://proxy.hu.in.pan-net.eu:3128"
-#https_proxy: "http://proxy.hu.in.pan-net.eu:3128"
-
 git_user: "xxx"
 git_email: "juraj@abc.eu"
 
